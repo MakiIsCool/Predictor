@@ -93,4 +93,4 @@ keep_alive()
 
 TOKEN = os.environ.get("TOKEN")
 
-bot.run(TOKEN)
+bot.run(MTA5ODAxODgxNTcyNTUzNTI1Mg.Gtj3X9.YVn1U76RxLSzi4iQvludSLjggaImcw8Vw30ZXc)
