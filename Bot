@@ -1,0 +1,96 @@
+import discord
+from discord.ext import commands
+from discord import Embed, Color
+import random
+import os
+from webserver import keep_alive
+
+intents = discord.Intents.default()
+intents.members = True
+
+bot = commands.Bot(command_prefix=",",intents=discord.Intents.all())
+allowed_channel = 1091503469514469438
+prev_round_id = None
+
+# Define the patterns for the diamond positions
+pattern1 = [0, 1, 2, 5, 6, 7, 10, 11, 12]
+pattern2 = [3, 4, 8, 9, 13, 14, 15, 20, 21, 22, 23, 18, 19, 16, 17]
+
+# Create a dictionary to store the diamond pattern for each user
+user_patterns = {}
+
+@bot.event
+async def on_ready():
+    print('Logged in as {0.user}'.format(bot))
+
+@bot.command(name="mines", description="Predict your next game!")
+@commands.has_role("Member")
+async def m(ctx, clicks: int):
+
+    if clicks < 1 or clicks > 24:
+        await ctx.send("you can not click more than 24 spots lol.")
+        return
+    if ctx.channel.id != allowed_channel:
+        await ctx.send("This command can only be used in <#" + str(allowed_channel) + ">.")
+        return
+
+
+    # Get the diamond pattern for the user
+    if ctx.author.id in user_patterns:
+        diamond_indices = user_patterns[ctx.author.id]
+    else:
+        diamond_indices = pattern1 + pattern2
+
+    # Create the grid
+    diamond_emoji = "🤑"
+    cross_emoji = "💣"
+    all_combinations = [cross_emoji] * 25
+    for i in diamond_indices[:clicks]:
+        all_combinations[i] = diamond_emoji
+    random.shuffle(all_combinations)
+    grid_str = ""
+    for i in range(5):
+        row = ""
+        for j in range(5):
+            index = i * 5 + j
+            row += all_combinations[index] + "\ufe0f "
+        row += "\n"
+        grid_str += row
+
+    # Create the embed
+    embed = Embed(title="Fire Predictor 🔥", description="")
+    embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1091498223316783124/1091501202467995708/Screenshot_20230325_231235_Discord.jpg")
+    embed.color = Color(0xFFEC00)
+
+    # Add the grid to the embed
+    embed.add_field(name="", value=grid_str, inline=False)
+
+    embed.add_field(name="Made by", value="_monke_#0001 & saiko#6428 now stfu", inline=False)
+    
+
+    # Mention the user who used the command in the message
+    user_mention = ctx.author.mention
+    await ctx.send(f"{user_mention}, here is your game prediction:"), await ctx.send(embed=embed)
+
+@bot.command(name="update", description="Toggle patterns.")
+@commands.has_any_role("Member")
+async def change(ctx):
+    global user_patterns
+
+    # Toggle the diamond pattern for the user between the two defined patterns
+    if ctx.author.id in user_patterns and user_patterns[ctx.author.id] == pattern1 + pattern2:
+        user_patterns[ctx.author.id] = pattern2 + pattern1
+        await ctx.send(f"{ctx.author.mention}, your grid has been updated..")
+    else:
+        user_patterns[ctx.author.id] = pattern1 + pattern2
+        await ctx.send(f"{ctx.author.mention}, your grid has been updated.")
+@m.error
+async def sem_error(ctx, error):
+ if isinstance(error, commands.errors.CheckFailure):
+  await ctx.send("Gotta buy the predictor to use this.")
+
+keep_alive()
+
+TOKEN = os.environ.get("TOKEN")
+
+bot.run(TOKEN)
